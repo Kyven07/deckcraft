@@ -1,0 +1,861 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full bg-[#f5f5f7] text-slate-900 transition-colors duration-200">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DeckCraft — Markdown Slide Studio</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <!-- Marked.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/marked@12.0.2/marked.min.js"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            apple: {
+              canvas: '#f5f5f7',
+              card: '#ffffff',
+              darkCanvas: '#070b14',
+              darkCard: '#0f172a'
+            }
+          },
+          fontFamily: {
+            sans: ['-apple-system', 'BlinkMacSystemFont', '"SF Pro Display"', '"SF Pro Text"', 'system-ui', 'sans-serif'],
+            mono: ['"SF Mono"', 'Menlo', 'Monaco', 'Consolas', 'monospace']
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    /* Apple Translucent Materials */
+    .apple-glass {
+      background: rgba(255, 255, 255, 0.82);
+      backdrop-filter: blur(20px) saturate(180%);
+      -webkit-backdrop-filter: blur(20px) saturate(180%);
+      border: 1px solid rgba(0, 0, 0, 0.08);
+    }
+    .dark .apple-glass {
+      background: rgba(15, 23, 42, 0.78);
+      backdrop-filter: blur(20px) saturate(180%);
+      -webkit-backdrop-filter: blur(20px) saturate(180%);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    .apple-card {
+      background: #ffffff;
+      border: 1px solid rgba(0, 0, 0, 0.06);
+      box-shadow: 0 20px 45px -12px rgba(0, 0, 0, 0.08), 0 1px 3px rgba(0, 0, 0, 0.04);
+    }
+    .dark .apple-card {
+      background: #0f172a;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6);
+    }
+    .apple-btn {
+      transition: transform 0.12s cubic-bezier(0.16, 1, 0.3, 1), background-color 0.15s ease, border-color 0.15s ease, opacity 0.15s ease;
+    }
+    .apple-btn:active {
+      transform: scale(0.96);
+    }
+    /* Slide Transitions */
+    .slide-anim-next {
+      animation: slideNext 0.32s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+    .slide-anim-prev {
+      animation: slidePrev 0.32s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+    @keyframes slideNext {
+      from { opacity: 0; transform: translateX(24px) scale(0.985); }
+      to { opacity: 1; transform: translateX(0) scale(1); }
+    }
+    @keyframes slidePrev {
+      from { opacity: 0; transform: translateX(-24px) scale(0.985); }
+      to { opacity: 1; transform: translateX(0) scale(1); }
+    }
+    /* Typography Overrides */
+    .slide-body h1 {
+      font-size: clamp(1.8rem, 4vw, 2.75rem);
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      line-height: 1.15;
+      color: #0f172a;
+      margin-bottom: 0.75rem;
+    }
+    .dark .slide-body h1 { color: #f8fafc; }
+    .slide-body h2 {
+      font-size: clamp(1.35rem, 3vw, 2.1rem);
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      line-height: 1.2;
+      color: #1e293b;
+      margin-top: 0.5rem;
+      margin-bottom: 0.65rem;
+    }
+    .dark .slide-body h2 { color: #e2e8f0; }
+    .slide-body h3 {
+      font-size: clamp(1.15rem, 2.2vw, 1.55rem);
+      font-weight: 600;
+      letter-spacing: -0.01em;
+      color: #4f46e5;
+      margin-top: 0.4rem;
+      margin-bottom: 0.5rem;
+    }
+    .dark .slide-body h3 { color: #818cf8; }
+    .slide-body p {
+      font-size: clamp(0.95rem, 1.8vw, 1.2rem);
+      line-height: 1.6;
+      color: #475569;
+      margin-bottom: 1rem;
+    }
+    .dark .slide-body p { color: #94a3b8; }
+    .slide-body ul, .slide-body ol {
+      padding-left: 1.5rem;
+      margin-bottom: 1rem;
+      font-size: clamp(0.95rem, 1.8vw, 1.15rem);
+      color: #334155;
+      line-height: 1.6;
+    }
+    .dark .slide-body ul, .dark .slide-body ol { color: #cbd5e1; }
+    .slide-body ul { list-style-type: disc; }
+    .slide-body ol { list-style-type: decimal; }
+    .slide-body li { margin-bottom: 0.4rem; }
+    .slide-body pre {
+      background: #f8fafc;
+      border: 1px solid rgba(0, 0, 0, 0.08);
+      border-radius: 0.75rem;
+      padding: 1rem 1.25rem;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: clamp(0.8rem, 1.4vw, 0.95rem);
+      color: #312e81;
+      overflow-x: auto;
+      margin: 1rem 0;
+    }
+    .dark .slide-body pre {
+      background: rgba(10, 15, 28, 0.85);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      color: #a5b4fc;
+    }
+    .slide-body code {
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      background: rgba(79, 70, 229, 0.08);
+      color: #4338ca;
+      padding: 0.15rem 0.4rem;
+      border-radius: 0.375rem;
+      font-size: 0.9em;
+    }
+    .dark .slide-body code {
+      background: rgba(99, 102, 241, 0.15);
+      color: #c7d2fe;
+    }
+    .slide-body pre code { background: transparent; padding: 0; color: inherit; }
+    .slide-body blockquote {
+      border-left: 4px solid #4f46e5;
+      padding-left: 1.25rem;
+      margin: 1.2rem 0;
+      color: #64748b;
+      font-style: italic;
+      font-size: clamp(1rem, 2vw, 1.25rem);
+    }
+    .dark .slide-body blockquote { color: #94a3b8; }
+    .slide-body table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 1rem 0;
+      font-size: clamp(0.85rem, 1.5vw, 1rem);
+    }
+    .slide-body th {
+      border-bottom: 2px solid rgba(0, 0, 0, 0.08);
+      padding: 0.6rem 0.8rem;
+      text-align: left;
+      font-weight: 600;
+      color: #0f172a;
+    }
+    .dark .slide-body th {
+      border-bottom: 2px solid rgba(255, 255, 255, 0.15);
+      color: #f1f5f9;
+    }
+    .slide-body td {
+      border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+      padding: 0.6rem 0.8rem;
+      color: #475569;
+    }
+    .dark .slide-body td {
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+      color: #94a3b8;
+    }
+    .slide-body strong { font-weight: 700; color: #0f172a; }
+    .dark .slide-body strong { color: #f8fafc; }
+    /* Native Print-to-PDF */
+    @media print {
+      body { background: white !important; color: black !important; }
+      header, #editor-pane, #preview-bottom-bar, #fullscreen-overlay, #app-toast, #notes-drawer {
+        display: none !important;
+      }
+      #workspace-container { display: block !important; height: auto !important; }
+      #preview-pane { width: 100% !important; background: transparent !important; display: block !important; }
+      .print-slide-page {
+        page-break-after: always;
+        break-after: page;
+        width: 100vw !important;
+        height: 56.25vw !important;
+        max-height: 95vh !important;
+        box-shadow: none !important;
+        border: 1px solid #e2e8f0 !important;
+        margin-bottom: 2rem !important;
+        padding: 3rem !important;
+        display: flex !important;
+        flex-direction: column !important;
+        justify-content: space-between !important;
+      }
+    }
+  </style>
+</head>
+<body class="h-full flex flex-col overflow-hidden select-none bg-[#f5f5f7] dark:bg-apple-darkCanvas font-sans text-slate-800 dark:text-slate-100 transition-colors duration-200">
+
+  <!-- Top Navigation Bar -->
+  <header class="h-14 apple-glass border-b border-slate-200/80 dark:border-slate-800/80 px-4 sm:px-6 flex items-center justify-between shrink-0 z-20">
+    <div class="flex items-center gap-3">
+      <div class="w-8 h-8 rounded-xl bg-gradient-to-tr from-indigo-600 to-indigo-400 flex items-center justify-center shadow-md shadow-indigo-500/20">
+        <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <rect x="2" y="3" width="20" height="14" rx="2" stroke-width="2"/>
+          <line x1="8" y1="21" x2="16" y2="21" stroke-width="2"/>
+          <line x1="12" y1="17" x2="12" y2="21" stroke-width="2"/>
+        </svg>
+      </div>
+      <div>
+        <h1 class="font-bold text-sm sm:text-base text-slate-900 dark:text-white tracking-tight flex items-center gap-2">
+          DeckCraft
+          <span class="text-[10px] font-semibold uppercase px-2 py-0.5 rounded-full bg-indigo-50 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-300 border border-indigo-200/60 dark:border-indigo-500/30">Studio</span>
+        </h1>
+      </div>
+    </div>
+
+    <!-- Center View Modes -->
+    <div class="hidden md:flex items-center bg-slate-200/60 dark:bg-slate-900/80 p-0.5 rounded-lg border border-slate-300/40 dark:border-slate-800 text-xs">
+      <button id="view-split-btn" class="apple-btn px-3 py-1.5 rounded-md font-medium text-slate-900 dark:text-white bg-white dark:bg-slate-800 shadow-sm">Split View</button>
+      <button id="view-editor-btn" class="apple-btn px-3 py-1.5 rounded-md font-medium text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200">Editor Only</button>
+      <button id="view-preview-btn" class="apple-btn px-3 py-1.5 rounded-md font-medium text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200">Preview Only</button>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="flex items-center gap-2">
+      <!-- Light/Dark Switcher -->
+      <button id="theme-toggle-btn" title="Toggle Light/Dark Theme" class="apple-btn p-2 rounded-lg text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white bg-white/80 dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm">
+        <svg id="sun-icon" class="w-4 h-4 hidden dark:block text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 9h-1m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
+        <svg id="moon-icon" class="w-4 h-4 block dark:hidden text-slate-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/></svg>
+      </button>
+
+      <!-- Print / PDF -->
+      <button id="print-deck-btn" title="Print or save as PDF" class="apple-btn px-3 py-1.5 rounded-lg text-xs font-medium text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white bg-white/80 dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm flex items-center gap-1.5">
+        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4H7v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
+        <span class="hidden sm:inline">PDF</span>
+      </button>
+
+      <!-- Export Markdown -->
+      <button id="export-md-btn" title="Download Markdown file" class="apple-btn px-3 py-1.5 rounded-lg text-xs font-medium text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white bg-white/80 dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm flex items-center gap-1.5">
+        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+        <span class="hidden sm:inline">Export</span>
+      </button>
+
+      <!-- Present Mode -->
+      <button id="present-btn" class="apple-btn px-4 py-1.5 rounded-lg text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 shadow-md shadow-indigo-500/20 flex items-center gap-1.5 border border-indigo-500/30">
+        <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd"/></svg>
+        <span>Present</span>
+        <kbd class="hidden sm:inline-block ml-1 px-1.5 py-0.5 text-[10px] font-mono bg-indigo-800 text-indigo-100 rounded">F</kbd>
+      </button>
+    </div>
+  </header>
+
+  <!-- Main Split Layout -->
+  <main id="workspace-container" class="flex-1 flex overflow-hidden relative">
+
+    <!-- Left Pane: Editor -->
+    <section id="editor-pane" class="w-full md:w-1/2 flex flex-col border-r border-slate-200/80 dark:border-slate-800/80 bg-white/60 dark:bg-slate-925 relative shrink-0 transition-all duration-200">
+      <div class="h-10 px-4 apple-glass border-b border-slate-200/60 dark:border-slate-800/60 flex items-center justify-between shrink-0 text-xs text-slate-500">
+        <div class="flex items-center gap-2">
+          <span class="font-semibold text-slate-700 dark:text-slate-300">Markdown Editor</span>
+          <span id="slide-count-badge" class="px-2 py-0.5 rounded-full bg-slate-200/60 dark:bg-slate-800 text-[10px] text-slate-700 dark:text-slate-300 font-mono font-medium">5 Slides</span>
+        </div>
+        <div class="flex items-center gap-3">
+          <span id="save-status" class="flex items-center gap-1 font-mono text-[11px] text-emerald-600 dark:text-emerald-400">
+            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+            Saved
+          </span>
+          <button id="sample-deck-btn" class="hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">Sample</button>
+          <button id="clear-editor-btn" class="hover:text-rose-500 transition-colors">Reset</button>
+        </div>
+      </div>
+
+      <div class="flex-1 flex overflow-hidden relative font-mono text-xs sm:text-sm">
+        <div id="line-numbers" class="w-12 select-none py-4 px-2 text-right text-xs text-slate-400 dark:text-slate-600 bg-slate-100/60 dark:bg-slate-950/60 border-r border-slate-200/60 dark:border-slate-800/60 overflow-hidden font-mono shrink-0 leading-6">
+          1
+        </div>
+        <textarea id="markdown-input" spellcheck="false" class="flex-1 resize-none bg-transparent py-4 px-4 text-slate-800 dark:text-slate-200 placeholder-slate-400 dark:placeholder-slate-600 outline-none leading-6 font-mono text-xs sm:text-sm overflow-y-auto whitespace-pre overflow-x-auto selection:bg-indigo-500/20 dark:selection:bg-indigo-500/30" placeholder="Type Markdown here... Use --- on an empty line to separate slides."></textarea>
+      </div>
+
+      <div class="h-7 px-4 bg-slate-100/80 dark:bg-slate-950/80 border-t border-slate-200/60 dark:border-slate-800/60 flex items-center justify-between text-[11px] text-slate-500 shrink-0">
+        <div class="flex items-center gap-1.5">
+          <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+          <span>Auto-saving to LocalStorage</span>
+          <span class="text-slate-300 dark:text-slate-700 ml-2">|</span>
+          <span class="ml-2">Slide: <code class="text-indigo-600 dark:text-indigo-400 font-mono">---</code></span>
+        </div>
+        <span class="hidden sm:inline">Speaker notes: <code class="text-indigo-600 dark:text-indigo-400 font-mono">Note: ...</code></span>
+      </div>
+    </section>
+
+    <!-- Right Pane: Preview -->
+    <section id="preview-pane" class="w-full md:w-1/2 flex flex-col bg-[#f5f5f7] dark:bg-slate-950 relative overflow-hidden transition-all duration-200">
+      <div class="h-10 px-4 apple-glass border-b border-slate-200/60 dark:border-slate-800/60 flex items-center justify-between shrink-0 text-xs">
+        <div class="flex items-center gap-2">
+          <span class="font-semibold text-slate-700 dark:text-slate-300">Live Presentation Preview</span>
+          <span class="text-[10px] text-slate-500 px-2 py-0.5 rounded bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs">16:9</span>
+        </div>
+        <div class="flex items-center gap-2">
+          <button id="toggle-notes-btn" title="Toggle Speaker Notes (N)" class="px-2 py-0.5 rounded font-mono text-[11px] font-medium text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-200 dark:border-indigo-800 flex items-center gap-1">
+            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z"/></svg>
+            <span>Notes (N)</span>
+          </button>
+          <span id="preview-slide-indicator" class="font-mono text-slate-600 dark:text-slate-300 font-medium">Slide 1 of 5</span>
+        </div>
+      </div>
+
+      <!-- Slide Viewport (16:9 Canvas) -->
+      <div class="flex-1 flex flex-col items-center justify-center p-4 sm:p-8 overflow-hidden relative">
+        <div id="slide-viewport-card" class="w-full max-w-3xl aspect-video apple-card rounded-2xl flex flex-col justify-between p-6 sm:p-10 relative overflow-hidden transition-all duration-200">
+          <div class="absolute top-0 left-0 right-0 h-1 bg-slate-100 dark:bg-slate-800">
+            <div id="slide-progress-bar" class="h-full bg-gradient-to-r from-indigo-500 to-indigo-600 transition-all duration-300 ease-out" style="width: 20%;"></div>
+          </div>
+          <div id="slide-render-target" class="slide-body flex-1 overflow-y-auto pr-2 relative flex flex-col justify-center"></div>
+          <div class="pt-4 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-between text-xs text-slate-400 dark:text-slate-500 shrink-0">
+            <span class="flex items-center gap-2 font-medium text-[11px] uppercase tracking-wide">
+              <span class="w-2 h-2 rounded-full bg-indigo-500 inline-block"></span>
+              DeckCraft Studio
+            </span>
+            <span id="slide-footer-counter" class="font-mono text-xs">1 / 5</span>
+          </div>
+        </div>
+
+        <!-- Speaker Notes Drawer -->
+        <div id="notes-drawer" class="w-full max-w-3xl mt-3 apple-glass rounded-xl p-3 text-xs text-slate-600 dark:text-slate-400 border border-slate-200/80 dark:border-slate-800 hidden transition-all">
+          <div class="font-semibold text-slate-800 dark:text-slate-200 mb-1 flex items-center gap-1.5">
+            <svg class="w-3.5 h-3.5 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            Speaker Notes
+          </div>
+          <div id="notes-content" class="leading-relaxed italic">No speaker notes recorded for this slide.</div>
+        </div>
+      </div>
+
+      <!-- Preview Controller Bar -->
+      <div id="preview-bottom-bar" class="h-14 apple-glass border-t border-slate-200/80 dark:border-slate-800/80 px-4 sm:px-6 flex items-center justify-between shrink-0">
+        <button id="prev-slide-btn" class="apple-btn px-3.5 py-1.5 rounded-lg text-xs font-semibold text-slate-700 dark:text-slate-200 hover:text-slate-900 dark:hover:text-white bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm flex items-center gap-2 disabled:opacity-30 disabled:pointer-events-none">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+          <span>Previous</span>
+          <kbd class="hidden sm:inline px-1 py-0.5 text-[10px] font-mono bg-slate-100 dark:bg-slate-800 text-slate-500 rounded border border-slate-200 dark:border-slate-700">←</kbd>
+        </button>
+
+        <div id="slide-pills-container" class="flex items-center gap-1.5 max-w-xs overflow-x-auto py-1 px-2"></div>
+
+        <button id="next-slide-btn" class="apple-btn px-3.5 py-1.5 rounded-lg text-xs font-semibold text-slate-700 dark:text-slate-200 hover:text-slate-900 dark:hover:text-white bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm flex items-center gap-2 disabled:opacity-30 disabled:pointer-events-none">
+          <span>Next</span>
+          <kbd class="hidden sm:inline px-1 py-0.5 text-[10px] font-mono bg-slate-100 dark:bg-slate-800 text-slate-500 rounded border border-slate-200 dark:border-slate-700">→</kbd>
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+        </button>
+      </div>
+    </section>
+  </main>
+
+  <!-- Fullscreen Presentation Overlay -->
+  <div id="fullscreen-overlay" class="fixed inset-0 z-50 bg-[#f5f5f7] dark:bg-slate-950 flex flex-col justify-center items-center p-6 sm:p-12 hidden select-none transition-colors">
+    <div id="fullscreen-slide-card" class="w-full max-w-5xl aspect-video apple-card rounded-3xl shadow-2xl flex flex-col justify-between p-8 sm:p-16 relative overflow-hidden">
+      <div class="absolute top-0 left-0 right-0 h-1.5 bg-slate-100 dark:bg-slate-800">
+        <div id="fs-progress-bar" class="h-full bg-gradient-to-r from-indigo-500 to-indigo-600 transition-all duration-300 ease-out" style="width: 20%;"></div>
+      </div>
+      <div id="fs-slide-target" class="slide-body flex-1 overflow-y-auto pr-4 flex flex-col justify-center"></div>
+      <div class="pt-6 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-between text-sm text-slate-400 shrink-0">
+        <span class="flex items-center gap-2 font-medium tracking-wider uppercase text-xs text-indigo-600 dark:text-indigo-400">
+          <span class="w-2.5 h-2.5 rounded-full bg-indigo-500 animate-pulse"></span>
+          Presentation Mode
+        </span>
+        <span id="fs-slide-counter" class="font-mono text-slate-600 dark:text-slate-300 text-sm">Slide 1 of 5</span>
+      </div>
+    </div>
+
+    <!-- Floating HUD -->
+    <div id="fs-hud" class="absolute bottom-6 left-1/2 -translate-x-1/2 apple-glass px-5 py-2 rounded-full shadow-xl flex items-center gap-4 transition-opacity duration-300 opacity-90 hover:opacity-100 border border-slate-200/80 dark:border-slate-700/60">
+      <button id="fs-prev-btn" class="apple-btn p-2 rounded-full hover:bg-slate-200/60 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300" title="Previous (←)">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+      </button>
+      <span id="fs-hud-counter" class="font-mono text-xs font-semibold text-slate-700 dark:text-slate-200 px-2">1 / 5</span>
+      <button id="fs-next-btn" class="apple-btn p-2 rounded-full hover:bg-slate-200/60 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300" title="Next (→, Space)">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+      </button>
+      <div class="h-4 w-[1px] bg-slate-300 dark:bg-slate-700"></div>
+      <button id="fs-exit-btn" class="apple-btn px-3 py-1 rounded-full text-xs font-medium text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white bg-slate-200/60 dark:bg-slate-800 flex items-center gap-1.5" title="Exit (Esc)">
+        <span>Exit</span>
+        <kbd class="text-[10px] font-mono px-1 bg-white dark:bg-slate-900 rounded border border-slate-300 dark:border-slate-600">Esc</kbd>
+      </button>
+    </div>
+  </div>
+
+  <!-- Toast Notification -->
+  <div id="app-toast" class="fixed bottom-6 right-6 z-50 apple-glass px-4 py-2.5 rounded-xl shadow-xl border border-indigo-500/30 text-xs font-medium text-slate-900 dark:text-white flex items-center gap-2 transform translate-y-16 opacity-0 transition-all duration-300 pointer-events-none">
+    <svg class="w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+    <span id="toast-message">Notification</span>
+  </div>
+
+  <script>
+    const DEFAULT_DECK = `# Designing Fluid Web Apps
+### Apple WWDC Philosophy & Motion
+By **DeckCraft Studio**
+
+* 7-day sprint execution
+* Pure client-side performance
+* Zero latency feedback
+
+Note: Emphasize the importance of scope control in 1-week builds.
+
+---
+
+## 1. Response: Kill Latency
+> "The moment lag appears, directness falls off a cliff."
+
+* **Instant Feedback:** Highlight buttons on pointer-down, not on release
+* **Eliminate Stutter:** Keep animations compositor-friendly
+* **Predictable Boundaries:** Soft rubber-band resistance
+
+Note: Quote WWDC 2018 talk on direct touch manipulation.
+
+---
+
+## 2. Dynamic Component Architecture
+Code blocks render cleanly inside modern presentation slides:
+
+\`\`\`javascript
+// Seamless slide transition spring
+const transition = {
+  type: 'spring',
+  damping: 1.0,  // critically damped
+  response: 0.35 // snappy settling time
+};
+\`\`\`
+
+Press **Space** or **→** to advance.
+
+---
+
+## 3. Weekly Execution Framework
+
+| Sprint Day | Objective | Deliverable |
+| :--- | :--- | :--- |
+| **Day 1** | Define & Prune | Single feature spec |
+| **Day 3** | Core Engine | Functional parser |
+| **Day 5** | Polish & Haptics | Fluid interactions |
+| **Day 6** | Deployment | Live production URL |
+
+Note: Mention that Day 6 deployment is mandatory regardless of incomplete secondary ideas.
+
+---
+
+## Ready to Present?
+### Start crafting your own slides now.
+
+1. Edit or replace text on the left editor pane
+2. Separate slides with a simple triple-dash \`---\`
+3. Hit **Present** or tap **F** for full-screen presentation mode
+
+*Crafted with Tailwind CSS & marked.js*`;
+
+    let slides = [];
+    let slideNotes = [];
+    let currentSlideIndex = 0;
+    let isFullscreen = false;
+    let showNotes = false;
+    let hudTimer = null;
+    let saveTimeout = null;
+
+    const editor = document.getElementById('markdown-input');
+    const lineNumbers = document.getElementById('line-numbers');
+    const slideCountBadge = document.getElementById('slide-count-badge');
+    const saveStatus = document.getElementById('save-status');
+    const clearBtn = document.getElementById('clear-editor-btn');
+    const sampleBtn = document.getElementById('sample-deck-btn');
+    const exportBtn = document.getElementById('export-md-btn');
+    const printBtn = document.getElementById('print-deck-btn');
+    const presentBtn = document.getElementById('present-btn');
+    const themeToggleBtn = document.getElementById('theme-toggle-btn');
+
+    const previewPane = document.getElementById('preview-pane');
+    const editorPane = document.getElementById('editor-pane');
+    const viewSplitBtn = document.getElementById('view-split-btn');
+    const viewEditorBtn = document.getElementById('view-editor-btn');
+    const viewPreviewBtn = document.getElementById('view-preview-btn');
+
+    const slideRenderTarget = document.getElementById('slide-render-target');
+    const slideProgressBar = document.getElementById('slide-progress-bar');
+    const previewSlideIndicator = document.getElementById('preview-slide-indicator');
+    const slideFooterCounter = document.getElementById('slide-footer-counter');
+    const prevSlideBtn = document.getElementById('prev-slide-btn');
+    const nextSlideBtn = document.getElementById('next-slide-btn');
+    const slidePillsContainer = document.getElementById('slide-pills-container');
+    const toggleNotesBtn = document.getElementById('toggle-notes-btn');
+    const notesDrawer = document.getElementById('notes-drawer');
+    const notesContent = document.getElementById('notes-content');
+
+    const fullscreenOverlay = document.getElementById('fullscreen-overlay');
+    const fsSlideTarget = document.getElementById('fs-slide-target');
+    const fsProgressBar = document.getElementById('fs-progress-bar');
+    const fsSlideCounter = document.getElementById('fs-slide-counter');
+    const fsHudCounter = document.getElementById('fs-hud-counter');
+    const fsPrevBtn = document.getElementById('fs-prev-btn');
+    const fsNextBtn = document.getElementById('fs-next-btn');
+    const fsExitBtn = document.getElementById('fs-exit-btn');
+    const fsHud = document.getElementById('fs-hud');
+
+    const toast = document.getElementById('app-toast');
+    const toastMsg = document.getElementById('toast-message');
+
+    function showToast(msg) {
+      toastMsg.textContent = msg;
+      toast.classList.remove('translate-y-16', 'opacity-0');
+      toast.classList.add('translate-y-0', 'opacity-100');
+      setTimeout(() => {
+        toast.classList.remove('translate-y-0', 'opacity-100');
+        toast.classList.add('translate-y-16', 'opacity-0');
+      }, 2500);
+    }
+
+    function saveToStorage() {
+      try {
+        localStorage.setItem('deckCraft_content', editor.value);
+        localStorage.setItem('deckCraft_slideIndex', currentSlideIndex);
+        saveStatus.classList.remove('opacity-0');
+      } catch (e) {}
+    }
+
+    function queueSave() {
+      saveStatus.classList.add('opacity-0');
+      clearTimeout(saveTimeout);
+      saveTimeout = setTimeout(saveToStorage, 300);
+    }
+
+    function initTheme() {
+      let savedTheme = 'light';
+      try {
+        savedTheme = localStorage.getItem('deckCraft_theme') || 'light';
+      } catch (e) {}
+      if (savedTheme === 'dark') {
+        document.documentElement.classList.add('dark');
+      } else {
+        document.documentElement.classList.remove('dark');
+      }
+    }
+
+    themeToggleBtn.addEventListener('click', () => {
+      const isDark = document.documentElement.classList.toggle('dark');
+      try {
+        localStorage.setItem('deckCraft_theme', isDark ? 'dark' : 'light');
+      } catch (e) {}
+      showToast(isDark ? 'Switched to Dark Mode' : 'Switched to Apple Light Mode');
+    });
+
+    function parseSlides(text) {
+      if (!text || !text.trim()) {
+        slideNotes = [''];
+        return ['# Blank Presentation\n\nType markdown on the left to start.'];
+      }
+      const rawLines = text.split(/\r?\n/);
+      const parsed = [];
+      const extractedNotes = [];
+      let currentSlide = [];
+      let currentNotes = [];
+
+      for (const line of rawLines) {
+        if (line.trim() === '---') {
+          parsed.push(currentSlide.join('\n'));
+          extractedNotes.push(currentNotes.join(' ').trim());
+          currentSlide = [];
+          currentNotes = [];
+        } else if (line.trim().startsWith('Note:') || line.trim().startsWith('> [!NOTE]')) {
+          currentNotes.push(line.replace(/^(Note:|>\s*[!NOTE])\s*/i, '').trim());
+        } else {
+          currentSlide.push(line);
+        }
+      }
+      parsed.push(currentSlide.join('\n'));
+      extractedNotes.push(currentNotes.join(' ').trim());
+
+      slideNotes = extractedNotes;
+      return parsed.length > 0 ? parsed : ['# Empty Slide'];
+    }
+
+    function updateLineNumbers() {
+      const text = editor.value;
+      const count = text.split('\n').length;
+      let numbersHtml = '';
+      for (let i = 1; i <= count; i++) {
+        numbersHtml += '<div>' + i + '</div>';
+      }
+      lineNumbers.innerHTML = numbersHtml;
+      lineNumbers.scrollTop = editor.scrollTop;
+    }
+
+    function renderSlide(direction = 'none') {
+      slides = parseSlides(editor.value);
+      if (currentSlideIndex >= slides.length) currentSlideIndex = Math.max(0, slides.length - 1);
+      if (currentSlideIndex < 0) currentSlideIndex = 0;
+
+      const total = slides.length;
+      const current = currentSlideIndex + 1;
+      const rawSlide = slides[currentSlideIndex] || '';
+
+      let html = '';
+      try {
+        html = marked.parse(rawSlide);
+      } catch (err) {
+        html = '<p class="text-rose-500">Error parsing markdown content.</p>';
+      }
+
+      slideRenderTarget.innerHTML = html;
+      fsSlideTarget.innerHTML = html;
+
+      slideRenderTarget.classList.remove('slide-anim-next', 'slide-anim-prev');
+      fsSlideTarget.classList.remove('slide-anim-next', 'slide-anim-prev');
+      if (direction === 'next') {
+        void slideRenderTarget.offsetWidth;
+        slideRenderTarget.classList.add('slide-anim-next');
+        fsSlideTarget.classList.add('slide-anim-next');
+      } else if (direction === 'prev') {
+        void slideRenderTarget.offsetWidth;
+        slideRenderTarget.classList.add('slide-anim-prev');
+        fsSlideTarget.classList.add('slide-anim-prev');
+      }
+
+      const progressPercent = Math.round((current / total) * 100) + '%';
+      slideProgressBar.style.width = progressPercent;
+      fsProgressBar.style.width = progressPercent;
+
+      previewSlideIndicator.textContent = 'Slide ' + current + ' of ' + total;
+      slideFooterCounter.textContent = current + ' / ' + total;
+      fsSlideCounter.textContent = 'Slide ' + current + ' of ' + total;
+      fsHudCounter.textContent = current + ' / ' + total;
+      slideCountBadge.textContent = total + (total === 1 ? ' Slide' : ' Slides');
+
+      prevSlideBtn.disabled = currentSlideIndex === 0;
+      nextSlideBtn.disabled = currentSlideIndex === total - 1;
+      fsPrevBtn.disabled = currentSlideIndex === 0;
+      fsNextBtn.disabled = currentSlideIndex === total - 1;
+
+      const currentNote = slideNotes[currentSlideIndex] || 'No speaker notes recorded for this slide.';
+      notesContent.textContent = currentNote;
+
+      renderPills(total, currentSlideIndex);
+      queueSave();
+    }
+
+    function renderPills(total, activeIdx) {
+      slidePillsContainer.innerHTML = '';
+      for (let i = 0; i < total; i++) {
+        const btn = document.createElement('button');
+        btn.className = 'w-2.5 h-2.5 rounded-full transition-all duration-200 ' + 
+          (i === activeIdx ? 'bg-indigo-600 dark:bg-indigo-400 w-6' : 'bg-slate-300 dark:bg-slate-700 hover:bg-slate-400 dark:hover:bg-slate-600');
+        btn.title = 'Jump to Slide ' + (i + 1);
+        btn.addEventListener('click', () => {
+          const dir = i > currentSlideIndex ? 'next' : 'prev';
+          currentSlideIndex = i;
+          renderSlide(dir);
+        });
+        slidePillsContainer.appendChild(btn);
+      }
+    }
+
+    function nextSlide() {
+      if (currentSlideIndex < slides.length - 1) {
+        currentSlideIndex++;
+        renderSlide('next');
+      }
+    }
+
+    function prevSlide() {
+      if (currentSlideIndex > 0) {
+        currentSlideIndex--;
+        renderSlide('prev');
+      }
+    }
+
+    function enterFullscreen() {
+      isFullscreen = true;
+      fullscreenOverlay.classList.remove('hidden');
+      renderSlide('none');
+      resetHudTimeout();
+      try {
+        if (!document.fullscreenElement && document.documentElement.requestFullscreen) {
+          document.documentElement.requestFullscreen().catch(() => {});
+        }
+      } catch (e) {}
+    }
+
+    function exitFullscreen() {
+      isFullscreen = false;
+      fullscreenOverlay.classList.add('hidden');
+      if (document.fullscreenElement && document.exitFullscreen) {
+        document.exitFullscreen().catch(() => {});
+      }
+    }
+
+    function resetHudTimeout() {
+      if (!isFullscreen) return;
+      fsHud.classList.remove('opacity-0');
+      fsHud.classList.add('opacity-90');
+      clearTimeout(hudTimer);
+      hudTimer = setTimeout(() => {
+        if (isFullscreen) {
+          fsHud.classList.remove('opacity-90');
+          fsHud.classList.add('opacity-0');
+        }
+      }, 2500);
+    }
+
+    function triggerPrint() {
+      showToast('Preparing printable slides...');
+      window.print();
+    }
+
+    window.addEventListener('keydown', (e) => {
+      const activeEl = document.activeElement;
+      const isEditing = activeEl === editor;
+
+      if ((e.key === 'f' || e.key === 'F') && !isEditing) {
+        e.preventDefault();
+        isFullscreen ? exitFullscreen() : enterFullscreen();
+        return;
+      }
+      if ((e.key === 'n' || e.key === 'N') && !isEditing) {
+        e.preventDefault();
+        showNotes = !showNotes;
+        notesDrawer.classList.toggle('hidden', !showNotes);
+        return;
+      }
+      if (e.key === 'Escape' && isFullscreen) {
+        e.preventDefault();
+        exitFullscreen();
+        return;
+      }
+      if (isFullscreen || !isEditing) {
+        if (e.key === 'ArrowRight' || e.key === 'ArrowDown' || (e.key === ' ' && !isEditing) || e.key === 'PageDown') {
+          e.preventDefault();
+          nextSlide();
+        } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp' || e.key === 'PageUp') {
+          e.preventDefault();
+          prevSlide();
+        }
+      }
+    });
+
+    editor.addEventListener('input', () => {
+      updateLineNumbers();
+      renderSlide('none');
+    });
+    editor.addEventListener('scroll', () => {
+      lineNumbers.scrollTop = editor.scrollTop;
+    });
+    editor.addEventListener('keydown', (e) => {
+      if (e.key === 'Tab') {
+        e.preventDefault();
+        const start = editor.selectionStart;
+        const end = editor.selectionEnd;
+        editor.value = editor.value.substring(0, start) + '  ' + editor.value.substring(end);
+        editor.selectionStart = editor.selectionEnd = start + 2;
+        updateLineNumbers();
+        renderSlide('none');
+      }
+    });
+
+    fullscreenOverlay.addEventListener('mousemove', resetHudTimeout);
+    prevSlideBtn.addEventListener('click', prevSlide);
+    nextSlideBtn.addEventListener('click', nextSlide);
+    fsPrevBtn.addEventListener('click', prevSlide);
+    fsNextBtn.addEventListener('click', nextSlide);
+    presentBtn.addEventListener('click', enterFullscreen);
+    fsExitBtn.addEventListener('click', exitFullscreen);
+    printBtn.addEventListener('click', triggerPrint);
+
+    toggleNotesBtn.addEventListener('click', () => {
+      showNotes = !showNotes;
+      notesDrawer.classList.toggle('hidden', !showNotes);
+    });
+
+    viewSplitBtn.addEventListener('click', () => {
+      editorPane.className = 'w-full md:w-1/2 flex flex-col border-r border-slate-200/80 dark:border-slate-800/80 bg-white/60 dark:bg-slate-925 relative shrink-0 transition-all duration-200';
+      previewPane.className = 'w-full md:w-1/2 flex flex-col bg-[#f5f5f7] dark:bg-slate-950 relative overflow-hidden transition-all duration-200';
+      viewSplitBtn.className = 'apple-btn px-3 py-1.5 rounded-md font-medium text-slate-900 dark:text-white bg-white dark:bg-slate-800 shadow-sm';
+      viewEditorBtn.className = 'apple-btn px-3 py-1.5 rounded-md font-medium text-slate-600 dark:text-slate-400 hover:text-slate-900';
+      viewPreviewBtn.className = 'apple-btn px-3 py-1.5 rounded-md font-medium text-slate-600 dark:text-slate-400 hover:text-slate-900';
+    });
+
+    viewEditorBtn.addEventListener('click', () => {
+      editorPane.className = 'w-full flex flex-col border-r border-slate-200/80 dark:border-slate-800/80 bg-white/60 dark:bg-slate-925 relative shrink-0 transition-all duration-200';
+      previewPane.className = 'hidden';
+      viewSplitBtn.className = 'apple-btn px-3 py-1.5 rounded-md font-medium text-slate-600 dark:text-slate-400 hover:text-slate-900';
+      viewEditorBtn.className = 'apple-btn px-3 py-1.5 rounded-md font-medium text-slate-900 dark:text-white bg-white dark:bg-slate-800 shadow-sm';
+      viewPreviewBtn.className = 'apple-btn px-3 py-1.5 rounded-md font-medium text-slate-600 dark:text-slate-400 hover:text-slate-900';
+    });
+
+    viewPreviewBtn.addEventListener('click', () => {
+      editorPane.className = 'hidden';
+      previewPane.className = 'w-full flex flex-col bg-[#f5f5f7] dark:bg-slate-950 relative overflow-hidden transition-all duration-200';
+      viewSplitBtn.className = 'apple-btn px-3 py-1.5 rounded-md font-medium text-slate-600 dark:text-slate-400 hover:text-slate-900';
+      viewEditorBtn.className = 'apple-btn px-3 py-1.5 rounded-md font-medium text-slate-600 dark:text-slate-400 hover:text-slate-900';
+      viewPreviewBtn.className = 'apple-btn px-3 py-1.5 rounded-md font-medium text-slate-900 dark:text-white bg-white dark:bg-slate-800 shadow-sm';
+    });
+
+    sampleBtn.addEventListener('click', () => {
+      editor.value = DEFAULT_DECK;
+      currentSlideIndex = 0;
+      updateLineNumbers();
+      renderSlide('none');
+      showToast('Loaded sample slide deck');
+    });
+
+    clearBtn.addEventListener('click', () => {
+      editor.value = '# New Presentation\n\nStart typing content here...\n\n---';
+      currentSlideIndex = 0;
+      updateLineNumbers();
+      renderSlide('none');
+      showToast('Editor reset');
+    });
+
+    exportBtn.addEventListener('click', () => {
+      const blob = new Blob([editor.value], { type: 'text/markdown;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = 'presentation.md';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      showToast('Exported presentation.md');
+    });
+
+    window.addEventListener('DOMContentLoaded', () => {
+      initTheme();
+      try {
+        const cached = localStorage.getItem('deckCraft_content');
+        if (cached && cached.trim()) {
+          editor.value = cached;
+          currentSlideIndex = parseInt(localStorage.getItem('deckCraft_slideIndex') || '0', 10);
+        } else {
+          editor.value = DEFAULT_DECK;
+        }
+      } catch (e) {
+        editor.value = DEFAULT_DECK;
+      }
+      updateLineNumbers();
+      renderSlide('none');
+    });
+  </script>
+</body>
+</html>
